@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import {
   Microscope,
   LayoutDashboard,
@@ -7,13 +7,25 @@ import {
   BookOpen,
   Settings,
   HelpCircle,
-  Plus
+  Plus,
+  Bot
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export function Sidebar() {
+// Shared active class logic
+const navLinkClasses = ({ isActive }: { isActive: boolean }) => 
+  `flex items-center gap-3 py-2.5 font-body-md transition-colors duration-200 rounded-r border-l-2 pl-4 ` + 
+  (isActive 
+    ? 'text-primary font-bold border-primary bg-primary/10' 
+    : 'text-muted-foreground font-medium border-transparent hover:text-primary hover:bg-accent')
+
+export function Sidebar({ mobile = false }: { mobile?: boolean }) {
+  const containerClasses = mobile 
+    ? "flex flex-col h-full py-stack-md w-full"
+    : "hidden md:flex bg-background border-r border-border flex-col h-full py-stack-md z-50 w-64 fixed left-0 top-0"
+
   return (
-    <nav className="hidden md:flex bg-background border-r border-border flex-col h-full py-stack-md z-50 w-64 fixed left-0 top-0">
+    <nav className={containerClasses}>
       <div className="px-6 mb-8">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded bg-card flex items-center justify-center border border-border">
@@ -33,34 +45,38 @@ export function Sidebar() {
         </Button>
       </div>
       
-      <div className="flex-1 px-4 space-y-2 overflow-y-auto">
-        <Link to="/" className="flex items-center gap-3 py-3 font-body-md duration-200 ease-in-out text-primary font-bold border-l-2 border-primary pl-4 bg-[linear-gradient(90deg,hsl(var(--primary)/0.1)_0%,transparent_100%)]">
+      <div className="flex-1 px-4 space-y-1.5 overflow-y-auto">
+        <NavLink to="/" end className={navLinkClasses}>
           <LayoutDashboard className="h-5 w-5" />
           Dashboard
-        </Link>
-        <Link to="/simulator" className="flex items-center gap-3 py-3 font-body-md duration-200 ease-in-out text-muted-foreground font-medium pl-4 hover:text-primary hover:bg-accent transition-colors rounded-r">
+        </NavLink>
+        <NavLink to="/simulator" className={navLinkClasses}>
           <FlaskConical className="h-5 w-5" />
           Simulator
-        </Link>
-        <Link to="/circuit" className="flex items-center gap-3 py-3 font-body-md duration-200 ease-in-out text-muted-foreground font-medium pl-4 hover:text-primary hover:bg-accent transition-colors rounded-r">
+        </NavLink>
+        <NavLink to="/circuit-builder" className={navLinkClasses}>
           <Network className="h-5 w-5" />
           Circuit Builder
-        </Link>
-        <Link to="/research" className="flex items-center gap-3 py-3 font-body-md duration-200 ease-in-out text-muted-foreground font-medium pl-4 hover:text-primary hover:bg-accent transition-colors rounded-r">
+        </NavLink>
+        <NavLink to="/tutor" className={navLinkClasses}>
+          <Bot className="h-5 w-5" />
+          AI Tutor
+        </NavLink>
+        <NavLink to="/research" className={navLinkClasses}>
           <BookOpen className="h-5 w-5" />
           Research
-        </Link>
+        </NavLink>
       </div>
       
-      <div className="px-4 mt-auto space-y-2 border-t border-border pt-4 mx-4">
-        <Link to="/settings" className="flex items-center gap-3 py-3 font-body-md duration-200 ease-in-out text-muted-foreground font-medium pl-2 hover:text-primary hover:bg-accent transition-colors rounded">
+      <div className="px-4 mt-auto space-y-1.5 border-t border-border pt-4 mx-4">
+        <NavLink to="/settings" className={navLinkClasses}>
           <Settings className="h-5 w-5" />
           Settings
-        </Link>
-        <Link to="/support" className="flex items-center gap-3 py-3 font-body-md duration-200 ease-in-out text-muted-foreground font-medium pl-2 hover:text-primary hover:bg-accent transition-colors rounded">
+        </NavLink>
+        <a href="https://docs.quantumforge.io" target="_blank" rel="noreferrer" className="flex items-center gap-3 py-2.5 font-body-md transition-colors duration-200 text-muted-foreground font-medium pl-4 hover:text-primary hover:bg-accent rounded-r border-l-2 border-transparent">
           <HelpCircle className="h-5 w-5" />
           Support
-        </Link>
+        </a>
       </div>
     </nav>
   )

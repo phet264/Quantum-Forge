@@ -7,10 +7,10 @@
     --background: 226 70% 4%; /* #030712 - Very dark blue/black */
     --foreground: 210 40% 98%;
 
-    --card: 224 45% 7%;
+    --card: 226 50% 6%; /* Slightly lighter than bg to provide subtle elevation */
     --card-foreground: 210 40% 98%;
 
-    --popover: 224 45% 7%;
+    --popover: 226 50% 6%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 188 86% 53%; /* Cyan/Quantum Blue #06b6d4 */
@@ -37,10 +37,10 @@
 
   .light {
     /* Light mode is supported but dark-first is default */
-    --background: 0 0% 100%;
+    --background: 210 20% 98%; /* Subtle slate-tinted off-white */
     --foreground: 226 70% 4%;
 
-    --card: 0 0% 100%;
+    --card: 0 0% 100%; /* Pure white to pop out against the off-white background */
     --card-foreground: 226 70% 4%;
 
     --popover: 0 0% 100%;
@@ -81,7 +81,7 @@
     @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)];
   }
   .glass-card {
-    @apply bg-card/60 backdrop-blur-lg border border-border shadow-lg;
+    @apply bg-card/70 backdrop-blur-md border border-border shadow-sm hover:shadow-md transition-shadow duration-300;
   }
   .quantum-glow {
     box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.5);
@@ -89,8 +89,8 @@
 
   .grid-bg {
     background-size: 40px 40px;
-    background-image: linear-gradient(to right, rgba(30, 41, 59, 0.3) 1px, transparent 1px),
-                      linear-gradient(to bottom, rgba(30, 41, 59, 0.3) 1px, transparent 1px);
+    background-image: linear-gradient(to right, hsl(var(--border) / 0.5) 1px, transparent 1px),
+                      linear-gradient(to bottom, hsl(var(--border) / 0.5) 1px, transparent 1px);
   }
 }
 

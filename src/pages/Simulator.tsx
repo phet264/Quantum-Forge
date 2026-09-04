@@ -10,13 +10,24 @@ import { useSimulation } from '@/state/SimulationContext'
 import { useCircuit } from '@/state/CircuitContext'
 import { generateQASM } from '@/lib/quantum/qasm'
 import { Button } from '@/components/ui/button'
+import { useEffect, useRef } from 'react'
 
 export function Simulator() {
   const location = useLocation()
   const returnToChallenge = location.state?.returnToChallenge
+  const autoRun = location.state?.autoRun
 
   const { latestResult, runSimulation } = useSimulation()
   const { circuitState, updateFromCode } = useCircuit()
+
+  const hasAutoRunRef = useRef(false)
+  
+  useEffect(() => {
+    if (autoRun && circuitState.operations.length > 0 && !hasAutoRunRef.current) {
+      hasAutoRunRef.current = true
+      runSimulation()
+    }
+  }, [autoRun, circuitState.operations.length, runSimulation])
 
   const handleCopyQASM = () => {
     const qasm = generateQASM(circuitState)

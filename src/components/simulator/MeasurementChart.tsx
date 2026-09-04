@@ -1,9 +1,32 @@
 import { useSimulation } from '@/state/SimulationContext'
+import { useAnimation } from '@/state/AnimationContext'
 import { useState } from 'react'
+import { Loader2 } from 'lucide-react'
 
 export function MeasurementChart() {
   const { latestResult } = useSimulation()
+  const { isAnimating, isMeasuring } = useAnimation()
   const [viewMode, setViewMode] = useState<'probabilities' | 'counts'>('probabilities')
+
+  if (isAnimating && !isMeasuring) {
+    return (
+      <div className="h-64 flex flex-col items-center justify-center border border-dashed border-border rounded bg-card/30 text-muted-foreground p-6 text-center">
+        <Loader2 className="w-8 h-8 mb-4 animate-spin text-primary/50" />
+        <p className="font-headline-sm text-foreground mb-1">Quantum Execution in Progress</p>
+        <p className="text-xs">Measurement pending...</p>
+      </div>
+    )
+  }
+
+  if (isMeasuring) {
+    return (
+      <div className="h-64 flex flex-col items-center justify-center border border-dashed border-primary/30 rounded bg-primary/5 text-primary p-6 text-center animate-pulse">
+        <div className="w-12 h-12 mb-4 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+        <p className="font-headline-sm mb-1 tracking-widest uppercase">Measuring...</p>
+        <p className="text-xs text-primary/70">Collapsing quantum state to classical bits</p>
+      </div>
+    )
+  }
 
   if (!latestResult || latestResult.status !== 'SUCCESS') {
     return (

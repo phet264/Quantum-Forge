@@ -1,0 +1,162 @@
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react'
+import type { CircuitState } from '@/types/circuit'
+import { calculateIntermediateStates } from '@/lib/quantum/simulation/LocalSimulator'
+
+export interface AnimationSettings {
+  enabled: boolean
+  prefersReducedMotion: boolean
+  speed: number
+}
+
+interface AnimationContextType {
+  settings: AnimationSettings
+  updateSettings: (s: Partial<AnimationSettings>) => void
+  isPlaying: boolean
+  currentStep: string | null // id of the currently animating operation
+  intermediateStateVector: { real: number, imag: number }[] | null
+  playAnimation: (circuit: CircuitState) => Promise<void>
+  stopAnimation: () => void
+  isAnimating: boolean
+}
+const AnimationContext = createContext<AnimationContextType | undefined>(undefined)
+
+export function AnimationProvider({ children }: { children: ReactNode }) {
+  const [settings, setSettings] = useState<AnimationSettings>(() => {
+    const saved = localStorage.getItem('quantumforge_animation_settings')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        // Migrate legacy string speeds to numbers
+        if (typeof parsed.speed === 'string') {
+          if (parsed.speed === 'slow') parsed.speed = 0.5
+          else if (parsed.speed === 'fast') parsed.speed = 2.0
+          else parsed.speed = 1.0
+        }
+        return {
+          enabled: parsed.enabled !== undefined ? parsed.enabled : true,
+          prefersReducedMotion: parsed.prefersReducedMotion || false,
+          speed: typeof parsed.speed === 'number' ? parsed.speed : 1.0
+        }
+      } catch (e) {}
+    }
+    const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    return {
+      enabled: !reducedMotion,
+      prefersReducedMotion: reducedMotion,
+      speed: 1.0
+    }
+  })
+
+  const updateSettings = useCallback((newSettings: Partial<AnimationSettings>) => {
+    setSettings(prev => ({ ...prev, ...newSettings }))
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('quantumforge_animation_settings', JSON.stringify(settings))
+  }, [settings])
+
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [currentStep, setCurrentStep] = useState<string | null>(null)
+  const [intermediateStateVector, setIntermediateStateVector] = useState<{ real: number, imag: number }[] | null>(null)
+  
+  const abortControllerRef = useRef<AbortController | null>(null)
+
+  const stopAnimation = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+    setIsPlaying(false)
+    setIsAnimating(false)
+    setCurrentStep(null)
+    setIntermediateStateVector(null)
+  }, [])
+
+  const playAnimation = useCallback(async (circuit: CircuitState) => {
+    if (circuit.operations.length === 0 || !settings.enabled) {
+      return Promise.resolve()
+    }
+
+    stopAnimation()
+
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
+
+    setIsAnimating(true)
+    setIsPlaying(true)
+    setCurrentStep(null)
+
+    let states: {real: Float64Array, imag: Float64Array}[]
+    try {
+      states = calculateIntermediateStates(circuit)
+    } catch (e) {
+      console.error('Animation state calculation failed', e)
+      stopAnimation()
+      return Promise.resolve()
+    }
+
+    const dim = 1 << circuit.numQubits
+    const initial = []
+    for(let i=0; i<dim; i++) {
+      initial.push({ real: i === 0 ? 1 : 0, imag: 0 })
+    }
+    setIntermediateStateVector(initial)
+    
+    let msPerStep = 600 / settings.speed
+
+    const delay = (ms: number) => new Promise(resolve => {
+      const timer = setTimeout(resolve, ms)
+      abortController.signal.addEventListener('abort', () => {
+        clearTimeout(timer)
+        resolve(null)
+      })
+    })
+
+    await delay(msPerStep / 2)
+
+    const ops = [...circuit.operations].sort((a, b) => a.timeStep - b.timeStep)
+
+    for (let i = 0; i < ops.length; i++) {
+      if (abortController.signal.aborted) break
+
+      setCurrentStep(ops[i].id)
+      const st = states[i]
+      const vec = []
+      for(let j=0; j<dim; j++) {
+        vec.push({ real: st.real[j], imag: st.imag[j] })
+      }
+      setIntermediateStateVector(vec)
+
+      await delay(msPerStep)
+    }
+
+    if (!abortController.signal.aborted) {
+      setCurrentStep(null)
+      setIsPlaying(false)
+    }
+  }, [settings.enabled, settings.speed, stopAnimation])
+
+  return (
+    <AnimationContext.Provider value={{
+      settings,
+      updateSettings,
+      isPlaying,
+      currentStep,
+      intermediateStateVector,
+      playAnimation,
+      stopAnimation,
+      isAnimating
+    }}>
+      {children}
+    </AnimationContext.Provider>
+  )
+}
+
+export function useAnimation() {
+  const context = useContext(AnimationContext)
+  if (!context) {
+    throw new Error('useAnimation must be used within an AnimationProvider')
+  }
+  return context
+}

@@ -1,12 +1,27 @@
-import { AssessmentAttempt } from './assessment'
+import type { AssessmentAttempt } from './assessment'
+
+export type LessonBlock =
+  | { type: 'theory'; content: string }
+  | { type: 'equation'; content: string }
+  | { type: 'conceptComparison'; items: { title: string; description: string }[] }
+  | { type: 'interactiveCircuit'; title: string; qasm: string; description: string }
+  | { type: 'probabilityVisualization'; state?: string }
+  | { type: 'stateVectorVisualization'; state?: string }
+  | { type: 'blochSphere'; state?: string }
+  | { type: 'quickCheck'; question: string; options: string[]; correctAnswerIndex: number; explanation: string }
+  | { type: 'circuitPractice'; title: string; targetCircuit: string; buttonText: string }
+  | { type: 'keyTakeaways'; points: string[] }
+  | { type: 'whyItMatters'; content: string }
 
 export interface Lesson {
   id: string
   moduleId: string
   title: string
   description: string
-  content: string // Markdown or HTML representation
-  interactiveType?: 'quiz' | 'circuit' | 'bloch'
+  objective?: string
+  content?: string // legacy
+  blocks?: LessonBlock[]
+  interactiveType?: 'quiz' | 'circuit' | 'bloch' // legacy
 }
 
 export interface LearningModule {
@@ -32,6 +47,7 @@ export interface QuantumAlgorithm {
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced'
   theory: string
   circuitOverview?: string
+  canonicalCircuitQasm?: string
   prerequisites?: string[] // Module IDs or Lesson IDs
 }
 

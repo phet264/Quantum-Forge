@@ -1,15 +1,17 @@
 import { useState, useMemo } from 'react'
 import { useSimulation } from '@/state/SimulationContext'
+import { useAnimation } from '@/state/AnimationContext'
 
 export function BlochSphere() {
   const { latestResult } = useSimulation()
+  const { isAnimating, intermediateStateVector, settings } = useAnimation()
   const [selectedQubit, setSelectedQubit] = useState(0)
 
   // Calculate Bloch vector (X, Y, Z) for the selected qubit
   const blochVector = useMemo(() => {
-    if (!latestResult || latestResult.status !== 'SUCCESS' || !latestResult.stateVector) return null
+    const stateVector = isAnimating ? intermediateStateVector : latestResult?.stateVector
+    if (!stateVector) return null
     
-    const { stateVector } = latestResult
     const numQubits = Math.log2(stateVector.length)
     if (selectedQubit >= numQubits) return null
 
@@ -39,9 +41,11 @@ export function BlochSphere() {
     }
 
     return { x: expX, y: expY, z: expZ }
-  }, [latestResult, selectedQubit])
+  }, [latestResult, isAnimating, intermediateStateVector, selectedQubit])
 
-  if (!latestResult || latestResult.status !== 'SUCCESS' || !latestResult.stateVector) {
+  const stateVector = isAnimating ? intermediateStateVector : latestResult?.stateVector
+
+  if (!stateVector) {
     return (
       <div className="h-64 flex flex-col items-center justify-center border border-dashed border-border rounded bg-card/30 text-muted-foreground p-6 text-center">
         Bloch sphere requires full state vector data.
@@ -49,7 +53,7 @@ export function BlochSphere() {
     )
   }
 
-  const numQubits = Math.log2(latestResult.stateVector.length)
+  const numQubits = Math.log2(stateVector.length)
 
   const radius = 80
   const cx = 100
@@ -84,6 +88,12 @@ export function BlochSphere() {
         </select>
       </div>
       
+      {numQubits > 1 && (
+        <div className="text-[10px] text-amber-500/80 bg-amber-500/10 border border-amber-500/20 rounded p-2 mb-4 leading-tight">
+          <strong>Note:</strong> Showing reduced state for Qubit q[{selectedQubit}]. A single Bloch sphere cannot fully represent entangled multi-qubit states.
+        </div>
+      )}
+
       <div className="flex items-center justify-center bg-card/20 rounded-lg p-4 border border-border/50">
         <svg width="200" height="200" viewBox="0 0 200 200" className="drop-shadow-md">
           {/* Sphere Outline */}
@@ -106,8 +116,19 @@ export function BlochSphere() {
           {/* State Vector */}
           {blochVector && (
             <>
-              <line x1={cx} y1={cy} x2={projX} y2={projY} stroke="currentColor" className="text-primary" strokeWidth="2" />
-              <circle cx={projX} cy={projY} r="4" fill="currentColor" className="text-primary" />
+              <line 
+                x1={cx} y1={cy} x2={projX} y2={projY} 
+                stroke="currentColor" 
+                className="text-primary" 
+                strokeWidth="2" 
+                style={{ transition: !settings.prefersReducedMotion ? 'all 0.3s ease-in-out' : 'none' }}
+              />
+              <circle 
+                cx={projX} cy={projY} r="4" 
+                fill="currentColor" 
+                className="text-primary" 
+                style={{ transition: !settings.prefersReducedMotion ? 'all 0.3s ease-in-out' : 'none' }}
+              />
             </>
           )}
         </svg>

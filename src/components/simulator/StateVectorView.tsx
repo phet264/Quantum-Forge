@@ -1,12 +1,16 @@
 import { useSimulation } from '@/state/SimulationContext'
+import { useAnimation } from '@/state/AnimationContext'
 import { useState } from 'react'
 import { Switch } from '@/components/ui/switch'
 
 export function StateVectorView() {
   const { latestResult } = useSimulation()
+  const { isAnimating, intermediateStateVector } = useAnimation()
   const [showOnlyNonZero, setShowOnlyNonZero] = useState(true)
 
-  if (!latestResult || latestResult.status !== 'SUCCESS' || !latestResult.stateVector) {
+  const stateVector = isAnimating ? intermediateStateVector : latestResult?.stateVector
+
+  if (!stateVector) {
     return (
       <div className="h-64 flex flex-col items-center justify-center border border-dashed border-border rounded bg-card/30 text-muted-foreground p-6 text-center">
         State vector data unavailable. Run an exact simulation.
@@ -14,7 +18,6 @@ export function StateVectorView() {
     )
   }
 
-  const { stateVector } = latestResult
   const numQubits = Math.log2(stateVector.length)
 
   return (

@@ -7,7 +7,7 @@
 export interface QuantumCircuit {
   id: string
   name: string
-  gates: any[] // Will type strictly in Phase 2
+  gates: any[] // Fully typed in QuantumAdapter
   numQubits: number
 }
 

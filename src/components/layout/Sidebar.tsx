@@ -9,7 +9,6 @@ import {
   HelpCircle,
   Plus,
   Bot,
-  GraduationCap,
   Target,
   Activity,
   Users
@@ -63,7 +62,7 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
               <BookOpen className="h-5 w-5" />
               Learn
             </NavLink>
-            <NavLink to="/circuit-builder" className={navLinkClasses}>
+            <NavLink to="/circuit-builder" state={{ mode: 'empty' }} className={navLinkClasses}>
               <Network className="h-5 w-5" />
               Circuit Builder
             </NavLink>

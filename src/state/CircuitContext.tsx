@@ -8,8 +8,10 @@ interface CircuitContextType {
   code: string
   parseError: string | null
   selectedGateId: string | null
+  highlightedGateIds: string[]
   
   // Actions
+  setHighlightedGateIds: (ids: string[]) => void
   setQubitCount: (count: number) => void
   addGate: (gate: Omit<GateInstance, 'id'>) => void
   updateGate: (id: string, updates: Partial<GateInstance>) => void
@@ -38,6 +40,7 @@ export function CircuitProvider({ children }: { children: ReactNode }) {
   const [code, setCode] = useState<string>('')
   const [parseError, setParseError] = useState<string | null>(null)
   const [selectedGateId, setSelectedGateId] = useState<string | null>(null)
+  const [highlightedGateIds, setHighlightedGateIds] = useState<string[]>([])
 
   // History state
   const [history, setHistory] = useState<CircuitState[]>([defaultState])
@@ -174,6 +177,8 @@ export function CircuitProvider({ children }: { children: ReactNode }) {
       code,
       parseError,
       selectedGateId,
+      highlightedGateIds,
+      setHighlightedGateIds,
       setQubitCount,
       addGate,
       updateGate,

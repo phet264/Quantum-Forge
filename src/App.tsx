@@ -8,6 +8,7 @@ import { CircuitProvider } from '@/state/CircuitContext'
 import { AssessmentProvider } from '@/state/AssessmentContext'
 import { InstructorProvider } from '@/state/InstructorContext'
 import { SharedCircuitsProvider } from '@/state/SharedCircuitsContext'
+import { AnimationProvider } from '@/state/AnimationContext'
 
 
 // Pages
@@ -48,40 +49,42 @@ function App() {
         <ProgressProvider>
           <SharedCircuitsProvider>
             <CircuitProvider>
-              <AssessmentProvider>
-                <InstructorProvider>
-                  <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-                <BrowserRouter>
-                  <Routes>
-                    <Route path="/" element={<DashboardLayout />}>
-                      <Route index element={<Dashboard />} />
-                      <Route path="simulator" element={<Simulator />} />
-                      <Route path="circuit-builder" element={<CircuitBuilder />} />
-                      <Route path="tutor" element={<Tutor />} />
-                      <Route path="research">
-                        <Route index element={<Research />} />
-                        <Route path="lesson/:id" element={<LessonViewer />} />
-                        <Route path="algorithm/:id" element={<AlgorithmViewer />} />
-                      </Route>
-                      <Route path="progress" element={<Progress />} />
-                      <Route path="assessments" element={<AssessmentsList />} />
-                      <Route path="assessment/:id" element={<AssessmentView />} />
-                      <Route path="challenge/:assessmentId/:challengeId" element={<ChallengeView />} />
-                      <Route path="instructor" element={<InstructorRoute />}>
-                        <Route index element={<InstructorDashboard />} />
-                        <Route path="students" element={<InstructorStudents />} />
-                        <Route path="assessments" element={<InstructorAssessments />} />
-                        <Route path="analytics" element={<InstructorAnalytics />} />
-                        <Route path="challenges" element={<InstructorChallenges />} />
-                      </Route>
-                      <Route path="settings" element={<Settings />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Route>
-                  </Routes>
-                </BrowserRouter>
-              </ThemeProvider>
-                </InstructorProvider>
-              </AssessmentProvider>
+              <AnimationProvider>
+                <AssessmentProvider>
+                  <InstructorProvider>
+                    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+                      <BrowserRouter>
+                        <Routes>
+                          <Route path="/" element={<DashboardLayout />}>
+                            <Route index element={<Dashboard />} />
+                            <Route path="simulator" element={<Simulator />} />
+                            <Route path="circuit-builder" element={<CircuitBuilder />} />
+                            <Route path="tutor" element={<Tutor />} />
+                            <Route path="research">
+                              <Route index element={<Research />} />
+                              <Route path="lesson/:id" element={<LessonViewer />} />
+                              <Route path="algorithm/:id" element={<AlgorithmViewer />} />
+                            </Route>
+                            <Route path="progress" element={<Progress />} />
+                            <Route path="assessments" element={<AssessmentsList />} />
+                            <Route path="assessment/:id" element={<AssessmentView />} />
+                            <Route path="challenge/:assessmentId/:challengeId" element={<ChallengeView />} />
+                            <Route path="instructor" element={<InstructorRoute />}>
+                              <Route index element={<InstructorDashboard />} />
+                              <Route path="students" element={<InstructorStudents />} />
+                              <Route path="assessments" element={<InstructorAssessments />} />
+                              <Route path="analytics" element={<InstructorAnalytics />} />
+                              <Route path="challenges" element={<InstructorChallenges />} />
+                            </Route>
+                            <Route path="settings" element={<Settings />} />
+                            <Route path="*" element={<NotFound />} />
+                          </Route>
+                        </Routes>
+                      </BrowserRouter>
+                    </ThemeProvider>
+                  </InstructorProvider>
+                </AssessmentProvider>
+              </AnimationProvider>
             </CircuitProvider>
           </SharedCircuitsProvider>
         </ProgressProvider>

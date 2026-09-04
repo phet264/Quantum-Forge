@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useSimulation } from '@/state/SimulationContext'
 import { useCircuit } from '@/state/CircuitContext'
 import { generateQASM } from '@/lib/quantum/qasm'
-import type { TutorMessage, TutorContext } from '@/lib/quantum/tutor/tutorApi'
+import type { TutorMessage } from '@/lib/quantum/tutor/tutorApi'
 import { sendTutorMessage } from '@/lib/quantum/tutor/tutorApi'
 import { Button } from '@/components/ui/button'
 import { Loader2, Send, Bot, User, Sparkles } from 'lucide-react'
@@ -24,7 +24,7 @@ const QUICK_ACTIONS = [
 ]
 
 export function Tutor() {
-  const { circuitState } = useCircuit()
+  const { circuitState, setHighlightedGateIds } = useCircuit()
   const { latestResult } = useSimulation()
   const location = useLocation()
   const navigate = useNavigate()
@@ -48,31 +48,6 @@ export function Tutor() {
     scrollToBottom()
   }, [messages])
 
-  useEffect(() => {
-    if (location.state?.tutorLaunchContext && !hasLaunched.current) {
-      hasLaunched.current = true
-      
-      const ctx = location.state.tutorLaunchContext
-      
-      // Clear state so refresh doesn't trigger again
-      navigate('.', { replace: true, state: {} })
-      
-      // Auto-send message
-      let prompt = "Explain my mistake: "
-      if (ctx.source === 'assessment' && ctx.assessment?.question_title) {
-        prompt += ctx.assessment.question_title
-      } else if (ctx.source === 'challenge' && ctx.challenge?.title) {
-        prompt += ctx.challenge.title
-      } else {
-        prompt += "Unknown question"
-      }
-      
-      // Use setTimeOut to allow the component to fully mount first if needed, though handleSend works immediately.
-      setTimeout(() => {
-        handleSend(prompt, ctx)
-      }, 100)
-    }
-  }, [location.state])
 
   const handleSend = async (text: string, overrideContext?: any) => {
     if (!text.trim() || isLoading) return
@@ -152,6 +127,33 @@ export function Tutor() {
     }
   }
 
+  useEffect(() => {
+    if (location.state?.tutorLaunchContext && !hasLaunched.current) {
+      hasLaunched.current = true
+      
+      const ctx = location.state.tutorLaunchContext
+      
+      // Clear state so refresh doesn't trigger again
+      navigate('.', { replace: true, state: {} })
+      
+      // Auto-send message
+      let prompt = "Explain my mistake: "
+      if (ctx.source === 'assessment' && ctx.assessment?.question_title) {
+        prompt += ctx.assessment.question_title
+      } else if (ctx.source === 'challenge' && ctx.challenge?.title) {
+        prompt += ctx.challenge.title
+      } else {
+        prompt += "Unknown question"
+      }
+      
+      // Use setTimeOut to allow the component to fully mount first if needed, though handleSend works immediately.
+      setTimeout(() => {
+        handleSend(prompt, ctx)
+      }, 100)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state])
+
   return (
     <div className="flex h-[calc(100vh-theme(spacing.20))] gap-6 max-w-7xl mx-auto w-full">
       
@@ -221,6 +223,27 @@ export function Tutor() {
                   <ReactMarkdown
                     remarkPlugins={[remarkMath]}
                     rehypePlugins={[rehypeKatex]}
+                    components={{
+                      a: ({ href, children, ...props }) => {
+                        if (href?.startsWith('#gate-')) {
+                          const gateId = href.replace('#gate-', '')
+                          return (
+                            <button
+                              className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30 hover:bg-purple-500/30 transition-colors ml-1 cursor-pointer"
+                              onClick={() => {
+                                setHighlightedGateIds([gateId])
+                                setTimeout(() => setHighlightedGateIds([]), 3000)
+                              }}
+                              title="Highlight this gate in the Circuit Builder"
+                            >
+                              <Sparkles className="w-3 h-3 mr-1" />
+                              {children}
+                            </button>
+                          )
+                        }
+                        return <a href={href} {...props} className="text-primary hover:underline">{children}</a>
+                      }
+                    }}
                   >
                     {msg.content}
                   </ReactMarkdown>

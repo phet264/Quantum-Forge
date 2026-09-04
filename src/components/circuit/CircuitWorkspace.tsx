@@ -1,10 +1,12 @@
 import { useCircuit } from '@/state/CircuitContext'
+import { useAnimation } from '@/state/AnimationContext'
 import { getCircuitDepth, isCellOccupied, GATE_DEFINITIONS } from '@/types/circuit'
 import type { GateType } from '@/types/circuit'
 import { Trash2 } from 'lucide-react'
 
 export function CircuitWorkspace() {
-  const { circuitState, addGate, selectGate, selectedGateId, removeGate } = useCircuit()
+  const { circuitState, addGate, selectGate, selectedGateId, removeGate, highlightedGateIds } = useCircuit()
+  const { currentStep } = useAnimation()
   const { numQubits, operations } = circuitState
   
   // Create a grid up to the current depth + 5 empty steps for expansion
@@ -107,6 +109,8 @@ export function CircuitWorkspace() {
             const maxQubit = Math.max(...op.targets, ...(op.controls || []))
             const span = maxQubit - minQubit
             const isSelected = selectedGateId === op.id
+            const isAnimating = currentStep === op.id
+            const isHighlighted = highlightedGateIds.includes(op.id)
 
             return (
               <div 
@@ -121,6 +125,8 @@ export function CircuitWorkspace() {
               >
                 <div 
                   className={`absolute inset-2 bg-background border flex flex-col items-center justify-center rounded cursor-pointer transition-colors shadow-sm ${
+                    isAnimating ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)] z-30' :
+                    isHighlighted ? 'border-purple-500 ring-2 ring-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)] z-20 bg-purple-500/10' :
                     isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/50'
                   }`}
                   onClick={(e) => {

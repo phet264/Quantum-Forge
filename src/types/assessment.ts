@@ -6,6 +6,7 @@ export interface BaseQuestion {
   title: string
   description: string
   points: number
+  weakTopic?: string
 }
 
 export interface MultipleChoiceQuestion extends BaseQuestion {
@@ -50,6 +51,9 @@ export interface Assessment {
   title: string
   description: string
   difficulty: DifficultyLevel
+  category: 'Fundamentals' | 'Circuits' | 'Algorithms'
+  timeEstimate: string
+  topics: string[]
   questions: Question[]
   passingScore: number // percentage 0-100
 }
@@ -79,12 +83,14 @@ export interface AssessmentAttempt {
 export interface StudentAnalytics {
   userId: string
   name: string
-  activeStatus: 'Active' | 'Inactive' | 'Needs attention'
+  activeStatus: 'On Track' | 'At Risk' | 'Needs Help' | 'Inactive'
   lastActive: string
   overallProgress: number
   averageScore: number
   completedAssessments: number
-  strugglingTopics: string[]
+  strugglingTopics: { topic: string; averageScore: number; failedAttempts: number }[]
+  progressState: any // UserProgress
+  needsAttentionReasons: string[]
 }
 
 export interface CohortAnalytics {

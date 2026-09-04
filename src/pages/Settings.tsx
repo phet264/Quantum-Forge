@@ -1,6 +1,9 @@
 import { Settings as SettingsIcon } from 'lucide-react'
+import { useAnimation } from '@/state/AnimationContext'
+import { Switch } from '@/components/ui/switch'
 
 export function Settings() {
+  const { settings, updateSettings } = useAnimation()
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -21,15 +24,46 @@ export function Settings() {
           </div>
         </div>
         
-        <div className="space-y-4 opacity-50">
-          {/* Placeholder for future forms */}
-          <div className="space-y-2">
-            <div className="h-4 w-32 bg-muted rounded"></div>
-            <div className="h-10 w-full bg-muted rounded border border-border"></div>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <h4 className="font-semibold text-foreground">Enable Quantum Animation</h4>
+              <p className="text-sm text-muted-foreground">Show step-by-step state evolution during simulation</p>
+            </div>
+            <Switch 
+              checked={settings.enabled} 
+              onCheckedChange={(c) => updateSettings({ enabled: c })} 
+            />
           </div>
-          <div className="space-y-2">
-            <div className="h-4 w-24 bg-muted rounded"></div>
-            <div className="h-10 w-full bg-muted rounded border border-border"></div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <h4 className="font-semibold text-foreground">Reduced Motion</h4>
+              <p className="text-sm text-muted-foreground">Minimize visual effects (respects OS preferences by default)</p>
+            </div>
+            <Switch 
+              checked={settings.prefersReducedMotion} 
+              onCheckedChange={(c) => updateSettings({ prefersReducedMotion: c })} 
+            />
+          </div>
+
+          <div className="space-y-3">
+            <div className="space-y-0.5">
+              <h4 className="font-semibold text-foreground">Animation Speed</h4>
+              <p className="text-sm text-muted-foreground">Adjust the delay between execution steps</p>
+            </div>
+            <div className="flex gap-4 items-center">
+              <input 
+                type="range" 
+                min="0.2" 
+                max="3" 
+                step="0.1" 
+                value={settings.speed}
+                onChange={(e) => updateSettings({ speed: parseFloat(e.target.value) })}
+                className="w-full max-w-xs"
+              />
+              <span className="text-sm font-code-sm text-muted-foreground">{settings.speed}x</span>
+            </div>
           </div>
         </div>
       </div>

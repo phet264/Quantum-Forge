@@ -12,6 +12,9 @@ interface ProgressContextType {
   recordAssessmentAttempt: (attempt: AssessmentAttempt, title: string) => void
   getModuleProgress: (moduleId: string) => number // returns percentage 0-100
   getOverallProgress: () => number
+  getLatestScore: (assessmentId: string) => number | undefined
+  getBestScore: (assessmentId: string) => number | undefined
+  getAttemptsCount: (assessmentId: string) => number
 }
 
 const defaultProgress: UserProgress = {
@@ -158,14 +161,33 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     return Math.round((progress.completedLessons.length / totalLessons) * 100)
   }
 
+  const getLatestScore = (assessmentId: string): number | undefined => {
+    const attempts = progress.assessmentAttempts?.filter(a => a.assessmentId === assessmentId && a.endTime) || []
+    if (attempts.length === 0) return undefined
+    // Sort by endTime descending
+    attempts.sort((a, b) => new Date(b.endTime!).getTime() - new Date(a.endTime!).getTime())
+    return attempts[0].score
+  }
+
+  const getBestScore = (assessmentId: string): number | undefined => {
+    return progress.assessmentScores[assessmentId]
+  }
+
+  const getAttemptsCount = (assessmentId: string): number => {
+    return progress.assessmentAttempts?.filter(a => a.assessmentId === assessmentId && a.endTime).length || 0
+  }
+
   return (
     <ProgressContext.Provider value={{ 
       progress, 
       markLessonComplete, 
       markAlgorithmComplete, 
       recordAssessmentAttempt,
-      getModuleProgress, 
-      getOverallProgress 
+      getModuleProgress,
+      getOverallProgress,
+      getLatestScore,
+      getBestScore,
+      getAttemptsCount
     }}>
       {children}
     </ProgressContext.Provider>

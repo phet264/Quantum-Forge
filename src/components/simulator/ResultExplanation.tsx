@@ -1,6 +1,7 @@
 import { useSimulation } from '@/state/SimulationContext'
 import { useCircuit } from '@/state/CircuitContext'
-import { Info } from 'lucide-react'
+import { Info, ExternalLink } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 export function ResultExplanation() {
   const { latestResult } = useSimulation()
@@ -59,6 +60,14 @@ export function ResultExplanation() {
         {lines.map((line, idx) => (
           <p key={idx} className="text-sm font-body-sm text-muted-foreground">{line}</p>
         ))}
+      </div>
+      <div className="mt-4 pt-4 border-t border-border/50">
+        <Link 
+          to="/tutor" 
+          className="inline-flex items-center text-xs font-label-caps tracking-wider text-primary hover:text-primary/80 transition-colors uppercase"
+        >
+          Want a deeper explanation? Ask the AI Tutor <ExternalLink className="w-3 h-3 ml-1" />
+        </Link>
       </div>
     </div>
   )

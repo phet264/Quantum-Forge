@@ -1,13 +1,16 @@
 import { useSimulation } from '@/state/SimulationContext'
 import { useCircuit } from '@/state/CircuitContext'
+import { useAnimation } from '@/state/AnimationContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Play, Loader2, Database, Network, AlertCircle, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Play, Square, RotateCcw, Pause, Loader2, Database, Network, AlertCircle, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 export function SimulationControls() {
   const { activeBackend, setActiveBackend, shots, setShots, isRunning, runSimulation, latestResult, isStale } = useSimulation()
   const { circuitState } = useCircuit()
+  const { playAnimation, stopAnimation, pauseAnimation, resumeAnimation, restartAnimation, isPlaying, isPaused, isAnimating, progress, isMeasuring, settings, updateSettings } = useAnimation()
   const [localShots, setLocalShots] = useState(shots.toString())
   const [error, setError] = useState('')
 
@@ -28,9 +31,17 @@ export function SimulationControls() {
     }
   }
 
-  const handleRun = () => {
+  const handleRun = async () => {
     if (error) return
-    runSimulation()
+    
+    // 1. Capture current circuit implicitly via context
+    // 2. Execute actual simulation first
+    await runSimulation()
+    
+    // 3. Play animation
+    if (settings.enabled) {
+      await playAnimation(circuitState)
+    }
   }
 
   const isCircuitEmpty = circuitState.operations.length === 0
@@ -94,23 +105,75 @@ export function SimulationControls() {
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90" 
             size="lg"
             onClick={handleRun}
-            disabled={isRunning || !!error || isCircuitEmpty}
+            disabled={isRunning || isPlaying || !!error || isCircuitEmpty}
           >
-            {isRunning ? (
+            {isRunning || isPlaying ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Running...
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" /> {isPlaying ? 'Animating...' : 'Simulating...'}
               </>
-            ) : isCircuitEmpty ? (
-              <>No Circuit Loaded</>
             ) : (
               <>
-                <Play className="h-4 w-4 mr-2" /> Run Simulation
+                <Play className="w-5 h-5 mr-2" /> Run Simulation
               </>
             )}
           </Button>
 
+          {settings.enabled && (isPlaying || isRunning) && (
+            <div className="flex flex-col space-y-2 mt-4 p-4 border border-primary/20 bg-primary/5 rounded-md">
+              <div className="flex justify-between text-xs font-code-sm text-primary uppercase mb-2">
+                <span>{isMeasuring ? 'Measuring...' : isPaused ? 'Paused' : 'Animating...'}</span>
+                <span>{progress.current} / {progress.total}</span>
+              </div>
+              <div className="w-full bg-primary/20 h-1 rounded-full overflow-hidden mb-4">
+                <div 
+                  className="bg-primary h-full transition-all duration-300"
+                  style={{ width: `${progress.total > 0 ? (progress.current / progress.total) * 100 : 0}%` }}
+                />
+              </div>
+              <div className="flex space-x-2">
+                {isPaused ? (
+                  <Button className="flex-1" variant="default" size="sm" onClick={resumeAnimation}>
+                    <Play className="w-4 h-4 mr-1" /> Resume
+                  </Button>
+                ) : (
+                  <Button className="flex-1" variant="secondary" size="sm" onClick={pauseAnimation} disabled={!isAnimating || isMeasuring}>
+                    <Pause className="w-4 h-4 mr-1" /> Pause
+                  </Button>
+                )}
+                <Button className="flex-1" variant="outline" size="sm" onClick={() => restartAnimation(circuitState)}>
+                  <RotateCcw className="w-4 h-4 mr-1" /> Restart
+                </Button>
+                <Button className="flex-1" variant="destructive" size="sm" onClick={stopAnimation}>
+                  <Square className="w-4 h-4 mr-1" /> Stop
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4 pt-4 border-t border-border flex flex-col space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground font-code-sm uppercase">Animate Execution</span>
+              <Switch 
+                checked={settings.enabled} 
+                onCheckedChange={(checked) => updateSettings({ enabled: checked })} 
+              />
+            </div>
+            {settings.enabled && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground font-code-sm uppercase">Speed ({settings.speed}x)</span>
+                <input 
+                  type="range" 
+                  min="0.2" max="3" step="0.1" 
+                  value={settings.speed}
+                  onChange={(e) => updateSettings({ speed: parseFloat(e.target.value) })}
+                  className="w-24"
+                />
+              </div>
+            )}
+          </div>
+
           {/* Execution Status Display */}
-          {latestResult && (
+          {latestResult && !isPlaying && (
              <div className={`mt-4 p-3 rounded text-sm font-body-sm border ${
                isStale ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' 
                : latestResult.status === 'SUCCESS' ? 'bg-primary/10 border-primary/20 text-primary' 

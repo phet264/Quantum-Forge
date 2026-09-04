@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAssessment } from '@/state/AssessmentContext'
 import { useSimulation } from '@/state/SimulationContext'
+import { useAnimation } from '@/state/AnimationContext'
 import { useCircuit } from '@/state/CircuitContext'
 import { Button } from '@/components/ui/button'
 import { CircuitWorkspace } from '@/components/circuit/CircuitWorkspace'
 import { GateLibrary } from '@/components/circuit/GateLibrary'
 import { CircuitToolbar } from '@/components/circuit/CircuitToolbar'
-import { AlertTriangle, ArrowLeft, Bot, Check, CheckCircle2, ChevronRight, Info, Lightbulb, Play, XCircle } from 'lucide-react'
+import { ArrowLeft, Bot, Check, CheckCircle2, Lightbulb, Play, XCircle } from 'lucide-react'
 import { generateQASM } from '@/lib/quantum/qasm'
 import type { CircuitChallenge } from '@/types/assessment'
 import { validateChallengeCircuit } from '@/lib/quantum/challengeValidation'
@@ -25,8 +26,9 @@ export function ChallengeView() {
   const { assessmentId, challengeId } = useParams<{ assessmentId: string, challengeId: string }>()
   const navigate = useNavigate()
   
-  const { activeAssessment, startAssessment, submitQuestionAttempt, finishAssessment } = useAssessment()
-  const { simulate, isSimulating, latestResult } = useSimulation()
+  const { activeAssessment, startAssessment, submitQuestionAttempt } = useAssessment()
+  const { isRunning: isSimulating, latestResult, runSimulation: simulate } = useSimulation()
+  const { playAnimation, stopAnimation, isPlaying, settings } = useAnimation()
   const { circuitState, updateFromCode } = useCircuit()
   
   const [evaluationResult, setEvaluationResult] = useState<{ passed: boolean; feedback: string } | null>(null)
@@ -47,13 +49,13 @@ export function ChallengeView() {
     if (assessmentId && (!activeAssessment || activeAssessment.id !== assessmentId)) {
       startAssessment(assessmentId)
     }
-  }, [assessmentId, activeAssessment])
+  }, [assessmentId, activeAssessment, startAssessment])
 
   const challenge = activeAssessment?.questions.find(q => q.id === challengeId) as CircuitChallenge | undefined
 
-  // Auto-evaluate when simulation result arrives
+  // Auto-evaluate when simulation result arrives and animation finishes
   useEffect(() => {
-    if (isSimulating || !latestResult || !challenge) return
+    if (isSimulating || isPlaying || !latestResult || !challenge) return
 
     let passed = false
     let feedback = ""
@@ -94,19 +96,23 @@ export function ChallengeView() {
       }
     } else if (latestResult.status === 'ERROR') {
       passed = false
-      feedback = `Simulation failed: ${latestResult.error}`
+      feedback = `Simulation failed: ${latestResult.errorMessage || 'Unknown error'}`
     }
 
     setEvaluationResult({ passed, feedback })
-  }, [latestResult, isSimulating, challenge])
+  }, [latestResult, isSimulating, isPlaying, challenge, circuitState])
 
   const handleRunCircuit = async () => {
     setEvaluationResult(null)
     setStructuralErrors([])
     
-    // An empty circuit is technically invalid for any useful operation, 
-    // but the simulator handles it. We just simulate directly.
-    await simulate(circuitState)
+    // Execute actual simulation first
+    await simulate()
+    
+    // Then animate timeline if enabled
+    if (settings.enabled) {
+      await playAnimation(circuitState)
+    }
   }
 
   const handleBuildCorrectCircuit = () => {
@@ -146,6 +152,8 @@ export function ChallengeView() {
   }
 
   const handleAIExplain = () => {
+    if (!challenge) return;
+
     let userMistakeContext = ""
     
     if (structuralErrors.length > 0) {
@@ -248,15 +256,21 @@ export function ChallengeView() {
             )}
           </TooltipProvider>
 
-          <Button onClick={handleRunCircuit} disabled={isSimulating} variant="default">
+          <Button onClick={handleRunCircuit} disabled={isSimulating || isPlaying} variant="default">
             <Play className="h-4 w-4 mr-2" />
-            {isSimulating ? 'Running Circuit...' : 'Run Circuit'}
+            {isSimulating || isPlaying ? 'Running...' : 'Run Circuit'}
           </Button>
+          
+          {settings.enabled && (isPlaying || isSimulating) && (
+            <Button variant="outline" onClick={stopAnimation}>
+              Stop
+            </Button>
+          )}
         </div>
       </div>
       
       {/* Simulation Result Area */}
-      {latestResult && !isSimulating && (
+      {latestResult && !isSimulating && !isPlaying && (
         <div className="bg-card border border-border rounded-lg p-4 mb-4">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-lg flex items-center">
@@ -287,13 +301,13 @@ export function ChallengeView() {
           
           {latestResult.status === 'ERROR' && (
             <div className="bg-destructive/10 text-destructive border border-destructive/20 p-3 rounded text-sm font-mono">
-              {latestResult.error || 'Unknown simulation error occurred.'}
+              {latestResult.errorMessage || 'Unknown simulation error occurred.'}
             </div>
           )}
         </div>
       )}
       
-      {evaluationResult && !isSimulating && (
+      {evaluationResult && !isSimulating && !isPlaying && (
         <div className={`p-4 rounded-lg border flex flex-col gap-4 ${evaluationResult.passed ? 'bg-primary/10 border-primary/20' : 'bg-destructive/10 border-destructive/20'}`}>
           <div className="flex items-start gap-3">
             {evaluationResult.passed ? <CheckCircle2 className="h-5 w-5 text-primary mt-0.5" /> : <XCircle className="h-5 w-5 text-destructive mt-0.5" />}

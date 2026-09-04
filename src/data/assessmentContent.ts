@@ -7,6 +7,9 @@ export const ASSESSMENTS: Assessment[] = [
     title: 'Quantum Measurement Basics',
     description: 'Test your understanding of superposition, measurement, and probability in quantum systems.',
     difficulty: 'Beginner',
+    category: 'Fundamentals',
+    timeEstimate: '~5 min',
+    topics: ['Measurement', 'Probability'],
     passingScore: 70,
     questions: [
       {
@@ -17,6 +20,7 @@ export const ASSESSMENTS: Assessment[] = [
         points: 10,
         options: ['0%', '50%', '100%', 'It depends on the observer'],
         correctOptionIndex: 1,
+        weakTopic: 'Superposition',
         explanation: 'An equal superposition (like the |+⟩ state created by a Hadamard gate) has a 50% chance of collapsing to |0⟩ and a 50% chance of collapsing to |1⟩ upon measurement.'
       },
       {
@@ -32,6 +36,7 @@ export const ASSESSMENTS: Assessment[] = [
           'It becomes entangled'
         ],
         correctOptionIndex: 2,
+        weakTopic: 'Measurement',
         explanation: 'Measurement causes the quantum state to collapse to the basis state that was observed (e.g., |0⟩ or |1⟩).'
       }
     ]
@@ -42,6 +47,9 @@ export const ASSESSMENTS: Assessment[] = [
     title: 'Bell State Challenge',
     description: 'Construct the fundamental entangled state.',
     difficulty: 'Intermediate',
+    category: 'Circuits',
+    timeEstimate: '~8 min',
+    topics: ['Entanglement', 'Circuit Building'],
     passingScore: 100,
     questions: [
       {
@@ -51,6 +59,7 @@ export const ASSESSMENTS: Assessment[] = [
         description: 'Use the Circuit Builder to create a standard |Φ⁺⟩ Bell state. The state should produce a 50/50 measurement distribution of 00 and 11.',
         points: 50,
         initialQubits: 2,
+        weakTopic: 'Entanglement',
         criteria: {
           targetProbabilities: {
             "00": 0.5,
@@ -69,14 +78,73 @@ export const ASSESSMENTS: Assessment[] = [
           expectedCircuitQasm: "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\nh q[0];\ncx q[0],q[1];"
         },
         explanation: 'A Bell state requires a Hadamard gate to create superposition on the first qubit, followed by a CNOT gate to entangle the second qubit.'
+      }
+    ]
+  },
+  {
+    id: 'assess-3',
+    moduleId: 'mod-1',
+    title: 'Qubit Fundamentals',
+    description: 'Master the basics of quantum bits vs classical bits.',
+    difficulty: 'Beginner',
+    category: 'Fundamentals',
+    timeEstimate: '~5 min',
+    topics: ['Qubits', 'States'],
+    passingScore: 70,
+    questions: [
+      {
+        id: 'q3',
+        type: 'multiple_choice',
+        title: 'Classical vs Quantum',
+        description: 'Which of the following is true about a qubit?',
+        points: 10,
+        options: [
+          'It can only be 0 or 1',
+          'It can be any value between 0 and 1 exclusively',
+          'It can exist in a superposition of |0⟩ and |1⟩ simultaneously',
+          'It holds infinite classical information permanently'
+        ],
+        correctOptionIndex: 2,
+        weakTopic: 'Qubits',
+        explanation: 'Unlike classical bits, qubits can exist in a superposition of both basis states at once.'
       },
+      {
+        id: 'q4',
+        type: 'multiple_choice',
+        title: 'Dirac Notation',
+        description: 'What does |1⟩ represent in Dirac notation?',
+        points: 10,
+        options: [
+          'A matrix',
+          'The state vector for the classical bit 1',
+          'The probability of measuring 1',
+          'A quantum gate'
+        ],
+        correctOptionIndex: 1,
+        weakTopic: 'Dirac Notation',
+        explanation: 'The |1⟩ ket represents the column vector corresponding to the classical state 1.'
+      }
+    ]
+  },
+  {
+    id: 'assess-4',
+    moduleId: 'mod-2',
+    title: 'Single-Qubit Gate Challenge',
+    description: 'Practice applying fundamental gates in the builder.',
+    difficulty: 'Beginner',
+    category: 'Circuits',
+    timeEstimate: '~5 min',
+    topics: ['Gates', 'Circuit Building'],
+    passingScore: 100,
+    questions: [
       {
         id: 'q-superposition',
         type: 'circuit_challenge',
-        title: 'Create a Superposition',
+        title: 'Create an Equal Superposition',
         description: 'Using the Circuit Builder, build a circuit that puts a single qubit into an equal superposition.',
         points: 50,
         initialQubits: 1,
+        weakTopic: 'Superposition',
         criteria: {
           targetProbabilities: {
             "0": 0.5,

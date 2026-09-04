@@ -1,6 +1,7 @@
 import { useProgress } from '@/state/ProgressContext'
 import { ASSESSMENTS } from '@/data/assessmentContent'
-import { BrainCircuit, BookOpen, ArrowRight, Lightbulb } from 'lucide-react'
+import { COURSES } from '@/data/learningContent'
+import { BrainCircuit, ArrowRight, Lightbulb } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
@@ -12,7 +13,6 @@ export function RecommendationsCard() {
   const completedSet = new Set(progress.completedAssessments || [])
   const available = ASSESSMENTS.filter(a => !completedSet.has(a.id))
 
-  // Find lowest scoring assessment to recommend a re-try or study
   let lowestScore = 100
   let weakestAssessmentId = ''
   Object.entries(progress.assessmentScores || {}).forEach(([id, score]) => {
@@ -22,6 +22,15 @@ export function RecommendationsCard() {
     }
   })
 
+  const weakestAssessment = ASSESSMENTS.find(a => a.id === weakestAssessmentId)
+  let recommendedLessonId = ''
+  if (weakestAssessment) {
+    const mod = COURSES.flatMap(c => c.modules).find(m => m.id === weakestAssessment.moduleId)
+    if (mod && mod.lessons.length > 0) {
+      recommendedLessonId = mod.lessons[0].id
+    }
+  }
+
   return (
     <div className="bg-card border border-border rounded-xl p-6 h-full flex flex-col">
       <h2 className="text-xl font-headline-md font-bold text-foreground mb-6 flex items-center gap-2">
@@ -30,13 +39,20 @@ export function RecommendationsCard() {
       </h2>
 
       <div className="space-y-4 flex-1">
-        {lowestScore < 70 && weakestAssessmentId && (
+        {lowestScore < 70 && weakestAssessmentId && weakestAssessment && (
           <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
             <h4 className="font-bold text-sm text-destructive mb-1 font-label-caps uppercase">Needs Review</h4>
-            <p className="text-sm font-body-sm mb-3">Your score on {ASSESSMENTS.find(a=>a.id === weakestAssessmentId)?.title} was {lowestScore}%. We recommend reviewing the core concepts.</p>
-            <Button size="sm" variant="outline" className="w-full text-xs h-8" onClick={() => navigate(`/assessment/${weakestAssessmentId}`)}>
-              Retake Assessment
-            </Button>
+            <p className="text-sm font-body-sm mb-3">Your score on {weakestAssessment.title} was {lowestScore}%. We recommend reviewing the core concepts.</p>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="flex-1 text-xs h-8" onClick={() => navigate(`/assessment/${weakestAssessmentId}`)}>
+                Retake
+              </Button>
+              {recommendedLessonId && (
+                <Button size="sm" variant="default" className="flex-1 text-xs h-8" onClick={() => navigate(`/research/lesson/${recommendedLessonId}`)}>
+                  Review Lesson
+                </Button>
+              )}
+            </div>
           </div>
         )}
 

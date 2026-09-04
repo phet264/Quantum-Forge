@@ -1,13 +1,15 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { ALGORITHMS } from '@/data/learningContent'
 import { useProgress } from '@/state/ProgressContext'
+import { useCircuit } from '@/state/CircuitContext'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Play, Code2 } from 'lucide-react'
 
 export function AlgorithmViewer() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { progress, markAlgorithmComplete } = useProgress()
+  const { updateFromCode } = useCircuit()
 
   const algorithm = ALGORITHMS.find(a => a.id === id)
 
@@ -58,10 +60,42 @@ export function AlgorithmViewer() {
 
       <div className="glass-card rounded-lg p-8 my-8 text-center border-dashed">
         <h4 className="font-headline-md mb-2">Circuit Implementation</h4>
-        <p className="text-muted-foreground font-body-sm mb-4">Algorithm circuitry visualization.</p>
-        <div className="bg-muted p-4 rounded inline-block text-sm text-muted-foreground">
-          [ Circuit viewer will load here in Phase 2 ]
-        </div>
+        
+        {algorithm.canonicalCircuitQasm ? (
+          <>
+            <p className="text-muted-foreground font-body-sm mb-6">Algorithm circuitry visualization.</p>
+            <div className="flex items-center justify-center gap-4">
+              <Button onClick={() => {
+                updateFromCode(algorithm.canonicalCircuitQasm!)
+                navigate('/circuit-builder')
+              }} variant="outline" className="gap-2">
+                <Code2 className="w-4 h-4" /> Try in Circuit Builder
+              </Button>
+              <Button onClick={() => {
+                updateFromCode(algorithm.canonicalCircuitQasm!)
+                navigate('/simulator', { state: { autoRun: true } })
+              }} variant="default" className="gap-2">
+                <Play className="w-4 h-4" /> Run Simulation
+              </Button>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center p-4">
+            <p className="text-muted-foreground font-body-md mb-4 max-w-lg text-center">
+              QuantumForge currently provides the theory and algorithm explanation for {algorithm.title}, but does not yet provide a canonical executable circuit for this algorithm.
+            </p>
+            <div className="bg-muted p-4 rounded inline-block text-sm text-muted-foreground mb-4">
+              Circuit implementation unavailable
+            </div>
+            <Button onClick={() => {
+                // Clear any existing circuit for a fresh builder
+                updateFromCode('OPENQASM 2.0;\\ninclude "qelib1.inc";\\nqreg q[1];\\n')
+                navigate('/circuit-builder')
+              }} variant="outline">
+              Open Circuit Builder
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end pt-8 border-t border-border">

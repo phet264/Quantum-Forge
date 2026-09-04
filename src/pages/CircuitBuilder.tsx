@@ -3,8 +3,21 @@ import { CircuitWorkspace } from '@/components/circuit/CircuitWorkspace'
 import { GateInspector } from '@/components/circuit/GateInspector'
 import { CodeEditor } from '@/components/circuit/CodeEditor'
 import { CircuitToolbar } from '@/components/circuit/CircuitToolbar'
+import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
+import { useCircuit } from '@/state/CircuitContext'
 
 export function CircuitBuilder() {
+  const location = useLocation()
+  const { clearCircuit } = useCircuit()
+
+  useEffect(() => {
+    const state = location.state as { mode?: string }
+    if (state?.mode === 'empty') {
+      clearCircuit()
+    }
+  }, [location.state, clearCircuit])
+
   return (
     <div className="space-y-4 lg:h-[calc(100vh-8rem)] flex flex-col h-auto">
       <div className="flex justify-between items-center shrink-0">

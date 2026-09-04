@@ -197,3 +197,111 @@ export class LocalSimulator implements SimulationBackend {
     }
   }
 }
+
+/**
+ * Calculates the exact state vector after each step in the circuit for animation purposes.
+ * Returns an array of state vectors where index `i` is the state after operation `i`.
+ */
+export function calculateIntermediateStates(circuit: CircuitState): { real: Float64Array, imag: Float64Array }[] {
+  const numQubits = circuit.numQubits
+  const dim = 1 << numQubits
+  const states: { real: Float64Array, imag: Float64Array }[] = []
+  
+  // Initial state |0...0>
+  let stateReal = new Float64Array(dim)
+  let stateImag = new Float64Array(dim)
+  stateReal[0] = 1.0
+  
+  // First, push the initial state (step -1 essentially, but we return states aligned with ops)
+  // Actually, we'll just store the state *after* each op, and the initial state can be handled separately.
+
+  const ops = [...circuit.operations].sort((a, b) => a.timeStep - b.timeStep)
+
+  for (const op of ops) {
+    if (op.type === 'Measure') {
+      states.push({ real: new Float64Array(stateReal), imag: new Float64Array(stateImag) })
+      continue
+    }
+
+    const target = op.targets[0]
+    const control = op.controls.length > 0 ? op.controls[0] : -1
+
+    const newReal = new Float64Array(dim)
+    const newImag = new Float64Array(dim)
+
+    for (let i = 0; i < dim; i++) {
+      if (control !== -1) {
+        const controlBit = (i >> control) & 1
+        if (controlBit === 0) {
+          newReal[i] = stateReal[i]
+          newImag[i] = stateImag[i]
+          continue
+        }
+      }
+
+      const targetBit = (i >> target) & 1
+      const partnerIndex = i ^ (1 << target)
+
+      const v0Real = targetBit === 0 ? stateReal[i] : stateReal[partnerIndex]
+      const v0Imag = targetBit === 0 ? stateImag[i] : stateImag[partnerIndex]
+      const v1Real = targetBit === 1 ? stateReal[i] : stateReal[partnerIndex]
+      const v1Imag = targetBit === 1 ? stateImag[i] : stateImag[partnerIndex]
+
+      let resReal = 0
+      let resImag = 0
+
+      if (op.type === 'H') {
+        const invSqrt2 = 1 / Math.sqrt(2)
+        if (targetBit === 0) {
+          resReal = (v0Real + v1Real) * invSqrt2
+          resImag = (v0Imag + v1Imag) * invSqrt2
+        } else {
+          resReal = (v0Real - v1Real) * invSqrt2
+          resImag = (v0Imag - v1Imag) * invSqrt2
+        }
+      } else if (op.type === 'X' || op.type === 'CX') {
+        resReal = targetBit === 0 ? v1Real : v0Real
+        resImag = targetBit === 0 ? v1Imag : v0Imag
+      } else if (op.type === 'Y') {
+         if (targetBit === 0) {
+           resReal = v1Imag
+           resImag = -v1Real
+         } else {
+           resReal = -v0Imag
+           resImag = v0Real
+         }
+      } else if (op.type === 'Z' || op.type === 'CZ') {
+        resReal = targetBit === 0 ? v0Real : -v1Real
+        resImag = targetBit === 0 ? v0Imag : -v1Imag
+      } else if (op.type === 'S') {
+         resReal = targetBit === 0 ? v0Real : -v1Imag
+         resImag = targetBit === 0 ? v0Imag : v1Real
+      } else if (op.type === 'T') {
+         if (targetBit === 0) {
+           resReal = v0Real
+           resImag = v0Imag
+         } else {
+           const invSqrt2 = 1 / Math.sqrt(2)
+           resReal = (v1Real - v1Imag) * invSqrt2
+           resImag = (v1Real + v1Imag) * invSqrt2
+         }
+      } else {
+         if (op.type === 'SWAP') {
+            throw new Error('SWAP is not supported in intermediate calc.')
+         }
+         resReal = targetBit === 0 ? v0Real : v1Real
+         resImag = targetBit === 0 ? v0Imag : v1Imag
+      }
+
+      newReal[i] = resReal
+      newImag[i] = resImag
+    }
+    
+    stateReal = newReal
+    stateImag = newImag
+    
+    states.push({ real: new Float64Array(stateReal), imag: new Float64Array(stateImag) })
+  }
+
+  return states
+}

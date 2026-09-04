@@ -1,8 +1,6 @@
 import { useProgress } from '@/state/ProgressContext'
-import { ASSESSMENTS } from '@/data/assessmentContent'
 import { COURSES } from '@/data/learningContent'
 import { CheckCircle, Target, Award, Clock } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 

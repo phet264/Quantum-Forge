@@ -1,6 +1,6 @@
 import type { SimulationBackend, SimulationResult } from './types'
 import type { CircuitState } from '@/types/circuit'
-import { generateQASM } from '../qasm'
+import { generateQASM, validateCircuitForQASM } from '../qasm'
 
 export class QiskitAdapter implements SimulationBackend {
   id = 'qiskit' as const
@@ -11,6 +11,11 @@ export class QiskitAdapter implements SimulationBackend {
     try {
       if (circuit.operations.length === 0) {
         throw new Error('Circuit has no gates to simulate.')
+      }
+
+      const validation = validateCircuitForQASM(circuit)
+      if (!validation.valid) {
+        throw new Error(`QASM Validation Failed: ${validation.error}\nReason: ${validation.errorDetails?.reason}`)
       }
 
       const qasmCode = generateQASM(circuit)

@@ -4,8 +4,43 @@ export interface TutorMessage {
 }
 
 export interface TutorContext {
-  circuit_qasm?: string
-  simulation_summary?: Record<string, any>
+  circuit?: {
+    numQubits: number
+    depth: number
+    operations: {
+      type: string
+      targets: number[]
+      controls: number[]
+      param?: string
+      timeStep: number
+    }[]
+    qasm?: string
+  }
+  simulation?: {
+    backend: string
+    shots: number
+    counts: Record<string, number>
+    probabilities: Record<string, number>
+    stateVector?: { real: number; imag: number }[]
+  }
+  assessment?: {
+    assessment_title: string
+    difficulty: string
+    question_title: string
+    question_type: string
+    question_description: string
+    student_answer: string
+    correct_answer: string
+    explanation: string
+  }
+  challenge?: {
+    title: string
+    description: string
+    expected_result?: string
+    student_result?: string
+    score?: number
+    mistakes?: string[]
+  }
   learning_context?: string
   selected_qubit?: number
 }

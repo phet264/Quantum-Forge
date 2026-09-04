@@ -17,6 +17,7 @@ interface CircuitContextType {
   selectGate: (id: string | null) => void
   updateFromCode: (newCode: string) => void
   clearCircuit: () => void
+  loadCircuit: (circuit: CircuitState) => void
   
   // History
   undo: () => void
@@ -136,6 +137,11 @@ export function CircuitProvider({ children }: { children: ReactNode }) {
     setSelectedGateId(null)
   }, [circuitState.numQubits, updateStateAndSyncCode])
 
+  const loadCircuit = useCallback((circuit: CircuitState) => {
+    updateStateAndSyncCode(circuit)
+    setSelectedGateId(null)
+  }, [updateStateAndSyncCode])
+
   const selectGate = (id: string | null) => setSelectedGateId(id)
 
   const undo = useCallback(() => {
@@ -175,6 +181,7 @@ export function CircuitProvider({ children }: { children: ReactNode }) {
       selectGate,
       updateFromCode,
       clearCircuit,
+      loadCircuit,
       undo,
       redo,
       canUndo: historyIndex > 0,

@@ -8,9 +8,14 @@ import {
   Settings,
   HelpCircle,
   Plus,
-  Bot
+  Bot,
+  GraduationCap,
+  Target,
+  Activity,
+  Users
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useUser } from '@/state/UserContext'
 
 // Shared active class logic
 const navLinkClasses = ({ isActive }: { isActive: boolean }) => 
@@ -20,6 +25,8 @@ const navLinkClasses = ({ isActive }: { isActive: boolean }) =>
     : 'text-muted-foreground font-medium border-transparent hover:text-primary hover:bg-accent')
 
 export function Sidebar({ mobile = false }: { mobile?: boolean }) {
+  const { user } = useUser()
+
   const containerClasses = mobile 
     ? "flex flex-col h-full py-stack-md w-full"
     : "hidden md:flex bg-background border-r border-border flex-col h-full py-stack-md z-50 w-64 fixed left-0 top-0"
@@ -46,26 +53,61 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
       </div>
       
       <div className="flex-1 px-4 space-y-1.5 overflow-y-auto">
-        <NavLink to="/" end className={navLinkClasses}>
-          <LayoutDashboard className="h-5 w-5" />
-          Dashboard
-        </NavLink>
-        <NavLink to="/simulator" className={navLinkClasses}>
-          <FlaskConical className="h-5 w-5" />
-          Simulator
-        </NavLink>
-        <NavLink to="/circuit-builder" className={navLinkClasses}>
-          <Network className="h-5 w-5" />
-          Circuit Builder
-        </NavLink>
-        <NavLink to="/tutor" className={navLinkClasses}>
-          <Bot className="h-5 w-5" />
-          AI Tutor
-        </NavLink>
-        <NavLink to="/research" className={navLinkClasses}>
-          <BookOpen className="h-5 w-5" />
-          Research
-        </NavLink>
+        {user?.role === 'student' ? (
+          <>
+            <NavLink to="/" end className={navLinkClasses}>
+              <LayoutDashboard className="h-5 w-5" />
+              Dashboard
+            </NavLink>
+            <NavLink to="/research" className={navLinkClasses}>
+              <BookOpen className="h-5 w-5" />
+              Learn
+            </NavLink>
+            <NavLink to="/circuit-builder" className={navLinkClasses}>
+              <Network className="h-5 w-5" />
+              Circuit Builder
+            </NavLink>
+            <NavLink to="/simulator" className={navLinkClasses}>
+              <FlaskConical className="h-5 w-5" />
+              Simulator
+            </NavLink>
+            <NavLink to="/assessments" className={navLinkClasses}>
+              <Target className="h-5 w-5" />
+              Assessments
+            </NavLink>
+            <NavLink to="/progress" className={navLinkClasses}>
+              <Activity className="h-5 w-5" />
+              Progress
+            </NavLink>
+            <NavLink to="/tutor" className={navLinkClasses}>
+              <Bot className="h-5 w-5" />
+              AI Tutor
+            </NavLink>
+          </>
+        ) : (
+          <>
+            <NavLink to="/instructor" end className={navLinkClasses}>
+              <LayoutDashboard className="h-5 w-5" />
+              Dashboard
+            </NavLink>
+            <NavLink to="/instructor/students" className={navLinkClasses}>
+              <Users className="h-5 w-5" />
+              Students
+            </NavLink>
+            <NavLink to="/instructor/assessments" className={navLinkClasses}>
+              <Target className="h-5 w-5" />
+              Assessments
+            </NavLink>
+            <NavLink to="/instructor/analytics" className={navLinkClasses}>
+              <Activity className="h-5 w-5" />
+              Analytics
+            </NavLink>
+            <NavLink to="/instructor/challenges" className={navLinkClasses}>
+              <Network className="h-5 w-5" />
+              Challenges
+            </NavLink>
+          </>
+        )}
       </div>
       
       <div className="px-4 mt-auto space-y-1.5 border-t border-border pt-4 mx-4">

@@ -3,10 +3,13 @@ import type { ReactNode } from 'react'
 import type { UserProgress, ActivityLog } from '../types/learning'
 import { COURSES } from '../data/learningContent'
 
+import type { AssessmentAttempt } from '../types/assessment'
+
 interface ProgressContextType {
   progress: UserProgress
   markLessonComplete: (lessonId: string, moduleId: string, title: string) => void
   markAlgorithmComplete: (algorithmId: string, title: string) => void
+  recordAssessmentAttempt: (attempt: AssessmentAttempt, title: string) => void
   getModuleProgress: (moduleId: string) => number // returns percentage 0-100
   getOverallProgress: () => number
 }
@@ -15,6 +18,9 @@ const defaultProgress: UserProgress = {
   completedLessons: [],
   completedModules: [],
   completedAlgorithms: [],
+  completedAssessments: [],
+  assessmentScores: {},
+  assessmentAttempts: [],
   recentActivity: []
 }
 
@@ -26,7 +32,19 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState<UserProgress>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
-      return stored ? JSON.parse(stored) : defaultProgress
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        return {
+          ...defaultProgress,
+          ...parsed,
+          // Explicitly merge arrays/objects to prevent null/undefined from older payloads
+          completedAssessments: parsed.completedAssessments || defaultProgress.completedAssessments,
+          assessmentScores: parsed.assessmentScores || defaultProgress.assessmentScores,
+          assessmentAttempts: parsed.assessmentAttempts || defaultProgress.assessmentAttempts,
+          recentActivity: parsed.recentActivity || defaultProgress.recentActivity
+        }
+      }
+      return defaultProgress
     } catch (e) {
       console.error("Failed to parse progress", e)
       return defaultProgress
@@ -95,6 +113,37 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  const recordAssessmentAttempt = (attempt: AssessmentAttempt, title: string) => {
+    setProgress(prev => {
+      const isPassed = attempt.passed || false
+      const newActivity: ActivityLog = {
+        id: `act-${Date.now()}`,
+        type: isPassed ? 'assessment_completed' : 'started',
+        itemId: attempt.assessmentId,
+        itemTitle: title,
+        timestamp: attempt.startTime
+      }
+
+      const completedAssessments = isPassed && !prev.completedAssessments.includes(attempt.assessmentId) 
+        ? [...prev.completedAssessments, attempt.assessmentId] 
+        : prev.completedAssessments
+
+      const prevScore = prev.assessmentScores[attempt.assessmentId] || 0
+      const assessmentScores = { ...prev.assessmentScores }
+      if (attempt.score !== undefined && attempt.score > prevScore) {
+        assessmentScores[attempt.assessmentId] = attempt.score
+      }
+
+      return {
+        ...prev,
+        completedAssessments,
+        assessmentScores,
+        assessmentAttempts: [...(prev.assessmentAttempts || []), attempt],
+        recentActivity: [newActivity, ...(prev.recentActivity || [])].slice(0, 10)
+      }
+    })
+  }
+
   const getModuleProgress = (moduleId: string): number => {
     const module = COURSES.flatMap(c => c.modules).find(m => m.id === moduleId)
     if (!module || module.lessons.length === 0) return 0
@@ -114,6 +163,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       progress, 
       markLessonComplete, 
       markAlgorithmComplete, 
+      recordAssessmentAttempt,
       getModuleProgress, 
       getOverallProgress 
     }}>

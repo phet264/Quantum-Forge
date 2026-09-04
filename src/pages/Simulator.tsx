@@ -1,4 +1,5 @@
-import { FlaskConical, ArrowRight, Download, Copy } from 'lucide-react'
+import { FlaskConical, ArrowRight, Download, Copy, ArrowLeft } from 'lucide-react'
+import { useLocation, Link } from 'react-router-dom'
 import { SimulationControls } from '@/components/simulator/SimulationControls'
 import { CircuitSummary } from '@/components/simulator/CircuitSummary'
 import { MeasurementChart } from '@/components/simulator/MeasurementChart'
@@ -11,6 +12,9 @@ import { generateQASM } from '@/lib/quantum/qasm'
 import { Button } from '@/components/ui/button'
 
 export function Simulator() {
+  const location = useLocation()
+  const returnToChallenge = location.state?.returnToChallenge
+
   const { latestResult, runSimulation } = useSimulation()
   const { circuitState, updateFromCode } = useCircuit()
 
@@ -32,6 +36,13 @@ export function Simulator() {
 
   return (
     <div className="space-y-6 pb-stack-xl">
+      {returnToChallenge && (
+        <Button variant="ghost" size="sm" asChild className="mb-[-1rem] -ml-3 text-muted-foreground hover:text-foreground w-fit">
+          <Link to={returnToChallenge}>
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Challenge
+          </Link>
+        </Button>
+      )}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="font-headline-lg text-headline-lg mb-1">Quantum Simulator</h2>

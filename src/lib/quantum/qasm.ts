@@ -23,6 +23,74 @@ const GATE_MAP: Record<string, GateType> = {
   measure: 'Measure'
 }
 
+export const QASM_INSTRUCTION_MAP: Record<GateType, string> = {
+  I: 'id',
+  X: 'x',
+  Y: 'y',
+  Z: 'z',
+  H: 'h',
+  S: 's',
+  T: 't',
+  Rx: 'rx',
+  Ry: 'ry',
+  Rz: 'rz',
+  CX: 'cx',
+  CZ: 'cz',
+  SWAP: 'swap',
+  Measure: 'measure'
+}
+
+export interface ValidationResult {
+  valid: boolean
+  error?: string
+  errorDetails?: {
+    gate: string
+    qubit: number[]
+    circuitPosition: number
+    generatedInstruction: string
+    reason: string
+  }
+}
+
+export function validateCircuitForQASM(state: CircuitState): ValidationResult {
+  for (let i = 0; i < state.operations.length; i++) {
+    const op = state.operations[i]
+    const instruction = QASM_INSTRUCTION_MAP[op.type]
+    
+    if (!instruction) {
+      return {
+        valid: false,
+        error: `Unsupported gate "${op.type}" at time step ${op.timeStep}`,
+        errorDetails: {
+          gate: op.type,
+          qubit: [...op.controls, ...op.targets],
+          circuitPosition: op.timeStep,
+          generatedInstruction: 'UNKNOWN',
+          reason: 'Gate type is not mapped to a valid OpenQASM 2.0 instruction.'
+        }
+      }
+    }
+
+    const involvedQubits = [...op.controls, ...op.targets]
+    for (const q of involvedQubits) {
+      if (q < 0 || q >= state.numQubits) {
+         return {
+          valid: false,
+          error: `Qubit index out of bounds for gate "${op.type}" at time step ${op.timeStep}`,
+          errorDetails: {
+            gate: op.type,
+            qubit: involvedQubits,
+            circuitPosition: op.timeStep,
+            generatedInstruction: instruction,
+            reason: `Qubit index ${q} is out of bounds (max ${state.numQubits - 1}).`
+          }
+        }
+      }
+    }
+  }
+  return { valid: true }
+}
+
 export function parseQASM(code: string): ParseResult {
   const lines = code.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('//'))
   
@@ -141,7 +209,11 @@ export function generateQASM(state: CircuitState): string {
       // Assuming measure q[i] -> c[i]
       gateStr = `measure q[${op.targets[0]}] -> c[${op.targets[0]}];`
     } else {
-      let name = op.type.toLowerCase()
+      let name = QASM_INSTRUCTION_MAP[op.type]
+      if (!name) {
+        throw new Error(`Unsupported gate type for QASM generation: ${op.type}`)
+      }
+      
       if (op.param) {
         name += `(${op.param})`
       }

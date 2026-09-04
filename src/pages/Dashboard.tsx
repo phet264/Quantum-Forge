@@ -2,6 +2,7 @@ import { WelcomeOverview } from '@/components/dashboard/WelcomeOverview'
 import { ContinueLearningCard } from '@/components/dashboard/ContinueLearningCard'
 import { LearningStats } from '@/components/dashboard/LearningStats'
 import { RecentActivityTimeline } from '@/components/dashboard/RecentActivityTimeline'
+import { RecommendationsCard } from '@/components/dashboard/RecommendationsCard'
 
 export function Dashboard() {
   return (
@@ -17,8 +18,9 @@ export function Dashboard() {
           <LearningStats />
         </div>
 
-        {/* Right Column (4 cols): Activity */}
+        {/* Right Column (4 cols): Activity & Recommendations */}
         <div className="lg:col-span-4 space-y-stack-md flex flex-col h-full">
+          <RecommendationsCard />
           <RecentActivityTimeline />
         </div>
       </div>

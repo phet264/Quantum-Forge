@@ -4,12 +4,24 @@ import { useTheme } from 'next-themes'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { useState, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useUser } from '@/state/UserContext'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem
+} from '@/components/ui/dropdown-menu'
 
 export function Topbar() {
   const { theme, setTheme } = useTheme()
   const [open, setOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, setRole } = useUser()
 
   // Close sheet on navigation
   useEffect(() => {
@@ -61,14 +73,50 @@ export function Topbar() {
           <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
         </button>
         
-        <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <img 
-            alt="Researcher avatar" 
-            className="w-8 h-8 rounded-full border border-border object-cover" 
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUpTNFyTtX-ykkJM1IBInvASQl47LfGBd4633afYz-AUtbS0pOMsiBf5r6mVjy9dMFRckzM9vxlGw3itD0CAqqXgOp912SGynd2Xxrr7cvJM8-MpDxxZUd1ay-pytzfH6HF33ulNB4bAPtONL7045sbL3BdGZhA_xm8xj1ooTBOfXJiKRTmy4FXInkBtQdGyvwVuQOZHVk63DGCLpn0d_J7lMnu1RL6972bYU8ZivOXP9mv5vXiyVg" 
-          />
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-2 hover:opacity-80 transition-opacity p-1 rounded hover:bg-accent">
+              <img 
+                alt="Avatar" 
+                className="w-8 h-8 rounded-full border border-border object-cover" 
+                src={user?.avatarUrl || "https://lh3.googleusercontent.com/aida-public/AB6AXuAUpTNFyTtX-ykkJM1IBInvASQl47LfGBd4633afYz-AUtbS0pOMsiBf5r6mVjy9dMFRckzM9vxlGw3itD0CAqqXgOp912SGynd2Xxrr7cvJM8-MpDxxZUd1ay-pytzfH6HF33ulNB4bAPtONL7045sbL3BdGZhA_xm8xj1ooTBOfXJiKRTmy4FXInkBtQdGyvwVuQOZHVk63DGCLpn0d_J7lMnu1RL6972bYU8ZivOXP9mv5vXiyVg"} 
+              />
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{user?.name}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {user?.role === 'instructor' ? 'Instructor' : 'Student'}
+                </p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground uppercase tracking-wider">
+              Current Role (Dev)
+            </DropdownMenuLabel>
+            <DropdownMenuCheckboxItem 
+              checked={user?.role === 'student'} 
+              onCheckedChange={() => {
+                setRole('student')
+                navigate('/')
+              }}
+            >
+              Student
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem 
+              checked={user?.role === 'instructor'} 
+              onCheckedChange={() => {
+                setRole('instructor')
+                navigate('/instructor')
+              }}
+            >
+              Instructor
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   )

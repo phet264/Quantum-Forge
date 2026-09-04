@@ -25,12 +25,21 @@ const mockUser: User = {
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
 
+const STORAGE_KEY = 'quantumforge_user_role'
+
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(mockUser)
+  const [user, setUser] = useState<User | null>(() => {
+    const savedRole = localStorage.getItem(STORAGE_KEY) as UserRole | null
+    if (savedRole && (savedRole === 'student' || savedRole === 'instructor')) {
+      return { ...mockUser, role: savedRole }
+    }
+    return mockUser
+  })
 
   const setRole = (role: UserRole) => {
     if (user) {
       setUser({ ...user, role })
+      localStorage.setItem(STORAGE_KEY, role)
     }
   }
 

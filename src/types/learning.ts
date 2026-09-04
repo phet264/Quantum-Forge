@@ -1,3 +1,5 @@
+import { AssessmentAttempt } from './assessment'
+
 export interface Lesson {
   id: string
   moduleId: string
@@ -37,12 +39,15 @@ export interface UserProgress {
   completedLessons: string[]
   completedModules: string[]
   completedAlgorithms: string[]
+  completedAssessments: string[]
+  assessmentScores: Record<string, number> // assessmentId -> score
+  assessmentAttempts: AssessmentAttempt[]
   recentActivity: ActivityLog[]
 }
 
 export interface ActivityLog {
   id: string
-  type: 'lesson_completed' | 'module_completed' | 'algorithm_completed' | 'started'
+  type: 'lesson_completed' | 'module_completed' | 'algorithm_completed' | 'started' | 'assessment_completed' | 'challenge_completed' | 'challenge_failed'
   itemId: string
   itemTitle: string
   timestamp: string

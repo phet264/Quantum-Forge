@@ -2,11 +2,16 @@ import { useState, useRef, useEffect } from 'react'
 import { useSimulation } from '@/state/SimulationContext'
 import { useCircuit } from '@/state/CircuitContext'
 import { generateQASM } from '@/lib/quantum/qasm'
-import type { TutorMessage } from '@/lib/quantum/tutor/tutorApi'
+import type { TutorMessage, TutorContext } from '@/lib/quantum/tutor/tutorApi'
 import { sendTutorMessage } from '@/lib/quantum/tutor/tutorApi'
 import { Button } from '@/components/ui/button'
 import { Loader2, Send, Bot, User, Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import ReactMarkdown from 'react-markdown'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import 'katex/dist/katex.min.css'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 const QUICK_ACTIONS = [
   "Explain my circuit",
@@ -21,6 +26,8 @@ const QUICK_ACTIONS = [
 export function Tutor() {
   const { circuitState } = useCircuit()
   const { latestResult } = useSimulation()
+  const location = useLocation()
+  const navigate = useNavigate()
   
   const [messages, setMessages] = useState<TutorMessage[]>([
     { role: 'assistant', content: 'Hello! I am your AI Tutor. I can help explain your circuit, debug issues, or guide you through quantum concepts.' }
@@ -35,11 +42,39 @@ export function Tutor() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const hasLaunched = useRef(false)
+
   useEffect(() => {
     scrollToBottom()
   }, [messages])
 
-  const handleSend = async (text: string) => {
+  useEffect(() => {
+    if (location.state?.tutorLaunchContext && !hasLaunched.current) {
+      hasLaunched.current = true
+      
+      const ctx = location.state.tutorLaunchContext
+      
+      // Clear state so refresh doesn't trigger again
+      navigate('.', { replace: true, state: {} })
+      
+      // Auto-send message
+      let prompt = "Explain my mistake: "
+      if (ctx.source === 'assessment' && ctx.assessment?.question_title) {
+        prompt += ctx.assessment.question_title
+      } else if (ctx.source === 'challenge' && ctx.challenge?.title) {
+        prompt += ctx.challenge.title
+      } else {
+        prompt += "Unknown question"
+      }
+      
+      // Use setTimeOut to allow the component to fully mount first if needed, though handleSend works immediately.
+      setTimeout(() => {
+        handleSend(prompt, ctx)
+      }, 100)
+    }
+  }, [location.state])
+
+  const handleSend = async (text: string, overrideContext?: any) => {
     if (!text.trim() || isLoading) return
 
     const newMessages = [...messages, { role: 'user', content: text } as TutorMessage]
@@ -49,18 +84,62 @@ export function Tutor() {
     setErrorMsg(null)
 
     try {
-      const qasm = circuitState.operations.length > 0 ? generateQASM(circuitState) : undefined
-      const simSummary = latestResult?.status === 'SUCCESS' ? {
+      const hasCircuit = circuitState.operations.length > 0
+      
+      // Prevent quick actions that rely on a circuit if none exists
+      const circuitRequiredActions = [
+        "Explain my circuit",
+        "Why these probabilities?",
+        "Explain each gate",
+        "Find an error",
+        "Optimize my circuit",
+        "Generate Qiskit code",
+        "Explain simply"
+      ]
+      if (!hasCircuit && circuitRequiredActions.includes(text)) {
+        setMessages([...newMessages, { role: 'assistant', content: 'Build a circuit first in Circuit Builder.' }])
+        setIsLoading(false)
+        return
+      }
+
+      let circuitContext = hasCircuit ? {
+        numQubits: circuitState.numQubits,
+        depth: Math.max(0, ...circuitState.operations.map((op: any) => op.timeStep)) + 1,
+        operations: circuitState.operations.map((op: any) => ({
+          type: op.type,
+          targets: op.targets,
+          controls: op.controls,
+          param: op.param,
+          timeStep: op.timeStep
+        })),
+        qasm: generateQASM(circuitState)
+      } : undefined
+
+      let simulationContext = latestResult?.status === 'SUCCESS' ? {
         backend: latestResult.backend,
         shots: latestResult.shots,
-        probabilities: latestResult.probabilities
+        counts: latestResult.measurements,
+        probabilities: latestResult.probabilities,
+        stateVector: latestResult.stateVector
       } : undefined
+
+      let challengeContext = undefined
+      let assessmentContext = undefined
+
+      if (overrideContext) {
+        if (overrideContext.challenge) challengeContext = overrideContext.challenge
+        if (overrideContext.assessment) assessmentContext = overrideContext.assessment
+        if (overrideContext.circuit) circuitContext = overrideContext.circuit
+        if (overrideContext.simulation) simulationContext = overrideContext.simulation
+      }
 
       const reply = await sendTutorMessage({
         messages: newMessages,
         context: {
-          circuit_qasm: qasm,
-          simulation_summary: simSummary
+          circuit: circuitContext,
+          simulation: simulationContext,
+          challenge: challengeContext,
+          assessment: assessmentContext
         }
       })
 
@@ -138,8 +217,13 @@ export function Tutor() {
                 {msg.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4 text-primary" />}
               </div>
               <div className={`max-w-[80%] rounded-lg p-4 ${msg.role === 'user' ? 'bg-primary/10 border border-primary/20' : 'bg-muted/30 border border-border/50'}`}>
-                <div className="prose prose-sm dark:prose-invert max-w-none font-body-md whitespace-pre-wrap">
-                  {msg.content}
+                <div className="prose prose-sm dark:prose-invert max-w-none font-body-md">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
                 </div>
               </div>
             </div>

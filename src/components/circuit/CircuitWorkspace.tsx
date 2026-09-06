@@ -5,7 +5,7 @@ import type { GateType } from '@/types/circuit'
 import { Trash2 } from 'lucide-react'
 
 export function CircuitWorkspace() {
-  const { circuitState, addGate, selectGate, selectedGateId, removeGate, highlightedGateIds } = useCircuit()
+  const { circuitState, addGate, selectGate, selectedGateId, removeGate, highlightedGateIds, selectedTool, selectTool, draggedTool, setDraggedTool } = useCircuit()
   const { currentStep } = useAnimation()
   const { numQubits, operations } = circuitState
   
@@ -14,14 +14,28 @@ export function CircuitWorkspace() {
   const timeSteps = Array.from({ length: depth }, (_, i) => i)
   const qubits = Array.from({ length: numQubits }, (_, i) => i)
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragEnter = (e: React.DragEvent, targetQubit: number, timeStep: number) => {
+    console.log('[QF-DND] DRAG_OVER (Enter)', { targetQubit, targetColumn: timeStep })
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+  }
+
+  const handleDragOver = (e: React.DragEvent, _targetQubit: number, _timeStep: number) => {
+    // console.log('[QF-DND] DRAG_OVER', { targetQubit: _targetQubit, targetColumn: _timeStep }) // commented out to avoid flooding console too fast
     e.preventDefault()
     e.dataTransfer.dropEffect = 'copy'
   }
 
   const handleDrop = (e: React.DragEvent, targetQubit: number, timeStep: number) => {
     e.preventDefault()
-    const gateType = e.dataTransfer.getData('application/quantum-gate') as GateType
+    let gateType = (e.dataTransfer.getData('application/quantum-gate') || e.dataTransfer.getData('text/plain')) as GateType
+    
+    // Fallback to React Context state if browser stripped the drag payload
+    if (!gateType && draggedTool) {
+      gateType = draggedTool
+    }
+
+    console.log('[QF-DND] DROP', { gateType, targetQubit, targetColumn: timeStep, fromContext: !e.dataTransfer.getData('text/plain') && !!draggedTool })
     if (!gateType || !GATE_DEFINITIONS[gateType]) return
 
     // Prevent placing on occupied cell
@@ -54,6 +68,7 @@ export function CircuitWorkspace() {
       }
     }
 
+    console.log('[QF-DND] BEFORE_STATE_UPDATE')
     addGate({
       type: gateType,
       targets,
@@ -61,6 +76,48 @@ export function CircuitWorkspace() {
       timeStep,
       param: def.hasParam ? 'pi/2' : undefined
     })
+    console.log('[QF-DND] AFTER_STATE_UPDATE')
+    setDraggedTool(null)
+  }
+
+  const handleCellClick = (targetQubit: number, timeStep: number) => {
+    if (selectedTool) {
+      if (!GATE_DEFINITIONS[selectedTool as GateType]) return
+      if (isCellOccupied(circuitState, targetQubit, timeStep)) return
+      
+      const def = GATE_DEFINITIONS[selectedTool as GateType]
+      let targets = [targetQubit]
+      let controls: number[] = []
+
+      if (def.numControls === 1) {
+        const controlQubit = targetQubit > 0 ? targetQubit - 1 : targetQubit + 1
+        if (controlQubit < numQubits && !isCellOccupied(circuitState, controlQubit, timeStep)) {
+          controls = [controlQubit]
+        } else {
+          alert('Not enough space for a controlled gate here.')
+          return
+        }
+      } else if (def.numTargets === 2) {
+        const target2 = targetQubit > 0 ? targetQubit - 1 : targetQubit + 1
+        if (target2 < numQubits && !isCellOccupied(circuitState, target2, timeStep)) {
+          targets = [targetQubit, target2]
+        } else {
+          alert('Not enough space for a SWAP gate here.')
+          return
+        }
+      }
+
+      addGate({
+        type: selectedTool,
+        targets,
+        controls,
+        timeStep,
+        param: def.hasParam ? 'pi/2' : undefined
+      })
+      selectTool(null)
+    } else {
+      selectGate(null)
+    }
   }
 
   return (
@@ -93,10 +150,13 @@ export function CircuitWorkspace() {
               {timeSteps.map(step => (
                 <div 
                   key={step} 
-                  className="w-16 h-16 shrink-0 relative z-10 border border-transparent hover:border-primary/50 hover:bg-primary/10 transition-colors rounded-sm"
-                  onDragOver={handleDragOver}
+                  className={`w-16 h-16 shrink-0 relative z-[100] border transition-colors rounded-sm ${
+                    selectedTool ? 'border-primary/30 hover:border-primary hover:bg-primary/20 cursor-crosshair' : 'border-transparent hover:border-primary/50 hover:bg-primary/10'
+                  }`}
+                  onDragEnter={(e) => handleDragEnter(e, q, step)}
+                  onDragOver={(e) => handleDragOver(e, q, step)}
                   onDrop={(e) => handleDrop(e, q, step)}
-                  onClick={() => selectGate(null)}
+                  onPointerDown={() => handleCellClick(q, step)}
                 >
                 </div>
               ))}
@@ -161,9 +221,9 @@ export function CircuitWorkspace() {
               </div>
             )
           })}
-          {operations.length === 0 && (
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-              <div className="bg-background/80 backdrop-blur-sm border border-border px-6 py-4 rounded-lg shadow-sm text-center max-w-sm">
+          {operations.length === 0 && !draggedTool && !selectedTool && (
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-0">
+              <div className="bg-background/80 backdrop-blur-sm border border-border px-6 py-4 rounded-lg shadow-sm text-center max-w-sm pointer-events-none">
                 <p className="font-headline-md mb-2">Circuit is Empty</p>
                 <p className="text-muted-foreground font-body-sm">
                   Drag and drop gates from the library onto the wires, or use the editor to write QASM code.

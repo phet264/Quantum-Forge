@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import type { ReactNode } from 'react'
-import type { CircuitState, GateInstance } from '../types/circuit'
+import type { CircuitState, GateInstance, GateType } from '../types/circuit'
 import { parseQASM, generateQASM } from '../lib/quantum/qasm'
 
 interface CircuitContextType {
@@ -9,6 +9,8 @@ interface CircuitContextType {
   parseError: string | null
   selectedGateId: string | null
   highlightedGateIds: string[]
+  selectedTool: GateType | null
+  draggedTool: GateType | null
   
   // Actions
   setHighlightedGateIds: (ids: string[]) => void
@@ -17,6 +19,8 @@ interface CircuitContextType {
   updateGate: (id: string, updates: Partial<GateInstance>) => void
   removeGate: (id: string) => void
   selectGate: (id: string | null) => void
+  selectTool: (tool: GateType | null) => void
+  setDraggedTool: (tool: GateType | null) => void
   updateFromCode: (newCode: string) => void
   clearCircuit: () => void
   loadCircuit: (circuit: CircuitState) => void
@@ -40,6 +44,8 @@ export function CircuitProvider({ children }: { children: ReactNode }) {
   const [code, setCode] = useState<string>('')
   const [parseError, setParseError] = useState<string | null>(null)
   const [selectedGateId, setSelectedGateId] = useState<string | null>(null)
+  const [selectedTool, setSelectedTool] = useState<GateType | null>(null)
+  const [draggedTool, setDraggedTool] = useState<GateType | null>(null)
   const [highlightedGateIds, setHighlightedGateIds] = useState<string[]>([])
 
   // History state
@@ -145,7 +151,15 @@ export function CircuitProvider({ children }: { children: ReactNode }) {
     setSelectedGateId(null)
   }, [updateStateAndSyncCode])
 
-  const selectGate = (id: string | null) => setSelectedGateId(id)
+  const selectGate = (id: string | null) => {
+    setSelectedGateId(id)
+    if (id) setSelectedTool(null)
+  }
+
+  const selectTool = (tool: GateType | null) => {
+    setSelectedTool(tool)
+    if (tool) setSelectedGateId(null)
+  }
 
   const undo = useCallback(() => {
     if (historyIndex > 0) {
@@ -178,12 +192,16 @@ export function CircuitProvider({ children }: { children: ReactNode }) {
       parseError,
       selectedGateId,
       highlightedGateIds,
+      selectedTool,
+      draggedTool,
       setHighlightedGateIds,
       setQubitCount,
       addGate,
       updateGate,
       removeGate,
       selectGate,
+      selectTool,
+      setDraggedTool,
       updateFromCode,
       clearCircuit,
       loadCircuit,

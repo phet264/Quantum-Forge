@@ -4,7 +4,7 @@ export type LessonBlock =
   | { type: 'theory'; content: string }
   | { type: 'equation'; content: string }
   | { type: 'conceptComparison'; items: { title: string; description: string }[] }
-  | { type: 'interactiveCircuit'; title: string; qasm: string; description: string }
+  | { type: 'interactiveCircuit'; title: string; qasm: string; description: string; availableGates?: string[]; visualizations?: string[] }
   | { type: 'probabilityVisualization'; state?: string }
   | { type: 'stateVectorVisualization'; state?: string }
   | { type: 'blochSphere'; state?: string }
